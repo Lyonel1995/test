@@ -96,6 +96,44 @@ def txt_split(x, location):
     outdf = pd.concat(dfl).reset_index(drop=True)
     return outdf
 
+def txt_split_china(x, location):
+    dfl = []
+    reget = x.split('截至')
+    reqz = reget[0].split('本土')[1]
+    rewzz = reget[1].split('无症状感染者')[1]
+    resh_qz = re.findall(f"上海(.*?)；", reqz)
+    resh_wzz = re.findall(f"上海(.*?)；", rewzz)
+
+    for l in location:
+        if len(resh_qz) > 0:
+            if '在' not in resh_qz[0]:
+                reout1 = re.findall(f"{l}(.*?)例", resh_qz[0])
+            else:
+                reout1 = re.findall(f"(.*?)例，在{l}", resh_qz[0])
+            if len(reout1) == 0:
+                reout1 = [0]
+        else:
+            reout1 = [0]
+
+        if len(resh_wzz) > 0:
+            if '在' not in resh_wzz[0]:
+                reout2 = re.findall(f"{l}(.*?)例", resh_wzz[0])
+            else:
+                reout2 = re.findall(f"(.*?)例，在{l}", resh_wzz[0])
+            if len(reout2) == 0:
+                reout2 = [0]
+        else:
+            reout2 = [0]
+
+        date = re.findall(f"(.*?)月(.*?)日", reget[0])[0]
+        date = f"2022-{date[0]}-{date[1]}"
+
+        reout_df = pd.DataFrame(
+            {'日期': pd.to_datetime(date), '行政区': l, '新增确诊': int(reout1[0]), '新增无症状感染': int(reout2[0])}, index=[0])
+        dfl.append(reout_df)
+    outdf = pd.concat(dfl).reset_index(drop=True)
+    return outdf
+
 def txt_split_wx(x, location):
     dfl = []
     x0 = x.split('本土病例情况')[0].split('新增境外输入性新冠肺炎确诊病例')[0]
