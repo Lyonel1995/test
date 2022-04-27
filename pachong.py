@@ -14,37 +14,46 @@ import re
 def getDriver():
     chrome_driver = r"C:\Users\liuyi\Anaconda3\Lib\site-packages\selenium\webdriver\chrome\chromedriver.exe"
     options = webdriver.ChromeOptions()
-    options.add_argument("--disable-extensions")
-    options.add_argument("--disable-gpu")
-    # options.add_argument("--no-sandbox") # linux only
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
-    options.add_experimental_option("useAutomationExtension", False)
+    options.add_experimental_option('useAutomationExtension', False)
+    options.add_argument('--disable-infobars')
     driver = webdriver.Chrome(options=options, executable_path=chrome_driver)
     driver.execute_cdp_cmd("Network.enable", {})
     driver.execute_cdp_cmd("Network.setExtraHTTPHeaders", {"headers": {"User-Agent": "browserClientA"}})
     driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
         "source": """
-            Object.defineProperty(navigator, 'webdriver', {
-                get: () => undefined
-            })
-        """
+                Object.defineProperty(navigator, 'webdriver', {
+                    get: () => undefined
+                })
+            """
     })
+    driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/99.0.4844.84 Safari/537.36",
+        "platform": "Windows"})
     return driver
 
 
-def get_data_gysy(source='WJW'):
+def get_data_gysy(source='WJW', thre=17):
     if source=='WJW':
         url = 'http://www.nhc.gov.cn/xcs/yqtb/list_gzbd.shtml'
         driver = getDriver()
         driver.get(url)
         time.sleep(5)
-        new_url = driver.find_element_by_css_selector('li a').get_attribute('href')
-        # new_url = driver.find_element_by_xpath('li')
-
-        driver.get(new_url)
-        time.sleep(5)
-        news = driver.find_element_by_id('xw_box').text
+        # new_url = driver.find_element_by_css_selector('li a').get_attribute('href')
+        new_url = [i.get_attribute('href') for i in driver.find_elements_by_xpath("//li//a")]
+        newsl = []
+        datel = []
+        for nu in new_url[:thre]:
+            driver.get(nu)
+            time.sleep(3)
+            news_ = driver.find_element_by_id('xw_box').text
+            date = re.findall(f"(.*?)月(.*?)日", news_)[0]
+            date = f"2022-{date[0]}-{date[1]}"
+            newsl.append(news_)
+            datel.append(date)
         driver.quit()
+        news = pd.DataFrame({'date':datel, 'news':newsl}, index=range(len(datel)))
+        news.date = pd.to_datetime(news.date)
     else:
         url = source
         driver = getDriver()
@@ -97,39 +106,30 @@ def txt_split(x, location):
     return outdf
 
 def txt_split_china(x, location):
+    x_ = x.split('\r')
+    if len(x_) == 1:
+        x_ = x.split('\n')
+    xzqzr = [i for i in x_ if '新增确诊病例' in i][0]
+    xzwzzr = [i for i in x_ if '新增无症状感染者' in i][0]
+    # btbl = re.findall(f"病例(.*?)，居住于{l}", x1)
+    # reout1 = [re.findall(r"\d+\.?\d*", i) for i in reout1]
+    lo_qz = re.findall(f"本土病例(.*?)。", xzqzr)[0].split('无症状感染者转为确诊病例')
     dfl = []
-    reget = x.split('截至')
-    reqz = reget[0].split('本土')[1]
-    rewzz = reget[1].split('无症状感染者')[1]
-    resh_qz = re.findall(f"上海(.*?)；", reqz)
-    resh_wzz = re.findall(f"上海(.*?)；", rewzz)
-
     for l in location:
-        if len(resh_qz) > 0:
-            if '在' not in resh_qz[0]:
-                reout1 = re.findall(f"{l}(.*?)例", resh_qz[0])
-            else:
-                reout1 = re.findall(f"(.*?)例，在{l}", resh_qz[0])
-            if len(reout1) == 0:
-                reout1 = [0]
-        else:
-            reout1 = [0]
-
-        if len(resh_wzz) > 0:
-            if '在' not in resh_wzz[0]:
-                reout2 = re.findall(f"{l}(.*?)例", resh_wzz[0])
-            else:
-                reout2 = re.findall(f"(.*?)例，在{l}", resh_wzz[0])
-            if len(reout2) == 0:
-                reout2 = [0]
-        else:
-            reout2 = [0]
-
-        date = re.findall(f"(.*?)月(.*?)日", reget[0])[0]
-        date = f"2022-{date[0]}-{date[1]}"
-
+        try:
+            city_qz = int(re.findall(f"{l}(.*?)例", lo_qz[0])[0])
+        except:
+            city_qz = 0
+        try:
+            city_zg = int(re.findall(f"{l}(.*?)例", lo_qz[1])[0])
+        except:
+            city_zg = 0
+        try:
+            city_wzz = int(re.findall(f"{l}(.*?)例", xzwzzr)[0])
+        except:
+            city_wzz = 0
         reout_df = pd.DataFrame(
-            {'日期': pd.to_datetime(date), '行政区': l, '新增确诊': int(reout1[0]), '新增无症状感染': int(reout2[0])}, index=[0])
+            {'地区': l, '新增确诊': city_qz, '无症状转归':city_zg,'新增无症状感染': city_wzz}, index=[0])
         dfl.append(reout_df)
     outdf = pd.concat(dfl).reset_index(drop=True)
     return outdf
@@ -251,7 +251,6 @@ def txt_split_wx_new(x):
             {'日期': date, '本土新增': '无数据', '每日出院': '无数据'}, index=[0])
     return outdf3
 
-
 def txt_split_gq(x, location):
     dfl = []
     x0 = x.split('本土病例情况')[0].split('新增境外输入性新冠肺炎确诊病例')[0]
@@ -283,7 +282,6 @@ def txt_split_gq(x, location):
         dfl.append(reout_df)
     outdf = pd.concat(dfl).reset_index(drop=True)
     return outdf
-
 
 def get_gkline(source="WJW"):
     txt_data = pd.read_excel(r'E:\国家卫健委-疫情防控动态.xlsx')
@@ -352,6 +350,25 @@ def get_kwxz(source="WJW"):
 
     dfout.to_excel('E:\\控外新增.xlsx')
 
+def get_china():
+    txt_data = pd.read_excel('E:\\全国疫情文本表.xlsx', index_col=0)
+    news = get_data_gysy(source='WJW', thre=1)
+    txt_data = pd.concat([txt_data, news]).drop_duplicates().sort_values(by='date')
+    location = pd.read_excel('E:\\province.xlsx',index_col=0).province.to_list()
+    outl = []
+    for i, r in txt_data.iterrows():
+        outdf3 = txt_split_china(r.news, location)
+        outdf3['日期'] = r.date
+        outl.append(outdf3)
+    dfo = pd.concat(outl).reset_index(drop=True)
+    dfo['真实新增确诊'] = dfo['新增确诊'] - dfo['无症状转归'] + dfo['新增无症状感染']
+    dfo_ = dfo.set_index(['日期', '地区']).真实新增确诊.unstack()
+    dfo__ = dfo_.apply(lambda x: x.cumsum())
+    writer = pd.ExcelWriter("E:\\全国疫情.xlsx")
+    dfo_.to_excel(writer, sheet_name='每日新增')
+    dfo__.to_excel(writer, sheet_name='总计')
+    writer.save()
+
 def renew(source='WJW'):
     txt_data = pd.read_excel(r'E:\国家卫健委-疫情防控动态.xlsx')
     location = ['浦东新区', '闵行区', '徐汇区', '嘉定区', '松江区', '黄浦区', '宝山区', '静安区', '普陀区', '崇明区', '奉贤区', '杨浦区', '虹口区', '长宁区',
@@ -396,11 +413,12 @@ def renew(source='WJW'):
 
 
 if __name__ == '__main__':
-    s = 'https://mp.weixin.qq.com/s/Dm0pjazKR_Fxb8-jScmmvA'
+    s = 'https://mp.weixin.qq.com/s/zH8lKAD_P6ykUzNLfrrtQg'
     renew(source=s)
     get_gkline(source=s)
     get_ax(source=s)
     get_kwxz(source=s)
+    # get_china()
 '''
 df = pd.read_excel("已导出.xlsx", index_col = 0)
 error_id = pd.read_csv("error.csv", index_col = 0)
