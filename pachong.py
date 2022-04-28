@@ -180,19 +180,29 @@ def txt_split_wx(x, location):
             zgall = 0
 
         if ('其余在隔离管控中发现' not in x0) and ('其余隔离管控中发现' not in x0):
-            if '均在隔离管控中发现' not in x0:
+            if ('均在隔离管控中发现' not in x0) and ('其余在相关风险人群排查中发现' not in x0):
                 regk = re.findall(f"其中(.*?)在隔离管控中发现", x0)
                 regknqz = sum([int(i) for i in re.findall(f"(\d+\.?\d*)例确诊病例和", regk[0])])
                 regknwzz = [int(i) for i in re.findall(f"和(\d+\.?\d*)例无症状感染者", regk[0])][0]
 
                 regkwqz = qzall - zgall - regknqz
                 regkwwzz = wzzall - regknwzz
-            else:
-                regknqz = qzall
-                regknwzz = wzzall
+            elif '其余在相关风险人群排查中发现' in x0:
+                regk = re.findall(f"例，(.*?)例确诊病例和(.*?)例无症状感染者在隔离管控中发现", x0)[0]
+                regknqz = int(regk[0])
+                regknwzz = int(regk[1])
 
-                regkwqz = 0
-                regkwwzz = 0
+                regkwqz = qzall - zgall - regknqz
+                regkwwzz = wzzall - regknwzz
+            else:
+                print(x)
+                regknqz = input('请输入管控内确诊')
+                regknwzz = input('请输入管控内无症状')
+                # regknqz = qzall
+                # regknwzz = wzzall
+
+                regkwqz = input('请输入管控外确诊')
+                regkwwzz = input('请输入管控外无症状')
         else:
             regk = re.findall(f"(.*?)在相关风险人群排查中发现", x0)
             if len(regk)>0:
@@ -214,9 +224,12 @@ def txt_split_wx(x, location):
         outdf2 = pd.DataFrame(
                 {'日期': pd.to_datetime(date), '管控内新增确诊':regknqz, '管控内新增无症状':regknwzz, '管控外新增确诊':regkwqz, '管控外新增无症状':regkwwzz, '文本':x0}, index=[0])
     except:
-        outdf2 = pd.DataFrame(
-            {'日期': pd.to_datetime(date), '管控内新增确诊': 0, '管控内新增无症状': 0, '管控外新增确诊': 0,
-             '管控外新增无症状': 0, '文本': x0}, index=[0])
+        print(x)
+        regknqz = input('gknqz')
+        regknwzz = input('gknwzz')
+        regkwqz = input('gkwqz')
+        regkwwzz = input('gkwwzz')
+        outdf2 = pd.DataFrame({'日期': pd.to_datetime(date), '管控内新增确诊':regknqz, '管控内新增无症状':regknwzz, '管控外新增确诊':regkwqz, '管控外新增无症状':regkwwzz, '文本':x0}, index=[0])
     return outdf, outdf2
 
 def txt_split_wx_new(x):
@@ -227,15 +240,6 @@ def txt_split_wx_new(x):
     date = f"2022-{date[0]}-{date[1]}"
 
     try:
-        if '无新增本土新冠肺炎确诊病例' not in x0:
-            qzall = [int(i) for i in re.findall(f"新增本土新冠肺炎确诊病例(.*?)例", x0)][0]
-            wzzall = [int(i) for i in re.findall(f"和无症状感染者(.*?)例", x0)][0]
-            zgall = [int(i) for i in re.findall(f"含既往无症状感染者转为确诊病例(.*?)例", x0)+re.findall(f"其中(.*?)例确诊病例为此前无症状感染者转归", x0)][0]
-        else:
-            qzall = 0
-            wzzall = [int(i) for i in re.findall(f"新增(\d+\.?\d*)例本土无症状感染者", x0)][0]
-            zgall = [int(i) for i in re.findall(f"含既往无症状感染者转为确诊病例(.*?)例", x0)][0]
-
         xzzy = [int(i) for i in re.findall(f"新增治愈出院(\d+\.?\d*)例", x1)][0]
         jcyxgc = [int(i) for i in re.findall(f"解除医学观察无症状感染者(\d+\.?\d*)例", x) + re.findall(f"解除医学观察本土无症状感染者(\d+\.?\d*)例", x)][0]
         try:
@@ -243,12 +247,13 @@ def txt_split_wx_new(x):
         except:
             jwjc = 0
         mrcy = xzzy + jcyxgc - jwjc
-        xz = qzall + wzzall - zgall
         outdf3 = pd.DataFrame(
-                {'日期': date, '本土新增':xz, '每日出院':mrcy}, index=[0])
+                {'日期': date, '每日出院':mrcy}, index=[0])
     except:
+        print(x)
+        d2 = input('每日出院')
         outdf3 = pd.DataFrame(
-            {'日期': date, '本土新增': '无数据', '每日出院': '无数据'}, index=[0])
+            {'日期': date, '每日出院': d2}, index=[0])
     return outdf3
 
 def txt_split_gq(x, location):
@@ -354,6 +359,7 @@ def get_china():
     txt_data = pd.read_excel('E:\\全国疫情文本表.xlsx', index_col=0)
     news = get_data_gysy(source='WJW', thre=1)
     txt_data = pd.concat([txt_data, news]).drop_duplicates().sort_values(by='date')
+    txt_data.to_excel(r"E:\\全国疫情文本表.xlsx")
     location = pd.read_excel('E:\\province.xlsx',index_col=0).province.to_list()
     outl = []
     for i, r in txt_data.iterrows():
@@ -413,7 +419,7 @@ def renew(source='WJW'):
 
 
 if __name__ == '__main__':
-    s = 'https://mp.weixin.qq.com/s/zH8lKAD_P6ykUzNLfrrtQg'
+    s = 'https://mp.weixin.qq.com/s/rufH4lvC5yO1835aNhs93A'
     renew(source=s)
     get_gkline(source=s)
     get_ax(source=s)
