@@ -170,7 +170,7 @@ def txt_split_wx(x, location):
             qzall = [int(i) for i in re.findall(f"新增本土新冠肺炎确诊病例(\d+\.?\d*)例", x0) + re.findall(f"新增(\d+\.?\d*)例本土新冠肺炎确诊病例", x0)][0]
             wzzall = [int(i) for i in re.findall(f"和无症状感染者(\d+\.?\d*)例", x0)+re.findall(f"新增(\d+\.?\d*)例本土无症状感染者", x0)][0]
             try:
-                zgall = [int(i) for i in re.findall(f"含既往无症状感染者转为确诊病例(\d+\.?\d*)例", x0)+re.findall(f"其中(\d+\.?\d*)例确诊病例为此前无症状感染者转归", x0)][0]
+                zgall = [int(i) for i in re.findall(f"含既往无症状感染者转为确诊病例(\d+\.?\d*)例", x0)+re.findall(f"其中(\d+\.?\d*)例确诊病例为此前无症状感染者转归", x0)+re.findall(f"其中(\d+\.?\d*)例确诊病例为既往无症状感染者转归", x0)][0]
             except:
                 zgall = 0
         else:
@@ -308,6 +308,7 @@ def get_gkline(source="WJW"):
         x = get_data_gysy(source=source)
         outdf, outdf2 = txt_split_wx(x, location)
         dfout = pd.concat([df_old, outdf2]).drop_duplicates()
+    dfout.loc[:, ['管控内新增确诊', '管控内新增无症状', '管控外新增确诊', '管控外新增无症状']] = dfout.loc[:, ['管控内新增确诊', '管控内新增无症状', '管控外新增确诊', '管控外新增无症状']].astype(int)
     dfout.to_excel('E:\\管控情况表.xlsx')
 
     dfout_ = dfout.set_index('日期').cumsum()
@@ -368,11 +369,17 @@ def get_china():
         outl.append(outdf3)
     dfo = pd.concat(outl).reset_index(drop=True)
     dfo['真实新增确诊'] = dfo['新增确诊'] - dfo['无症状转归'] + dfo['新增无症状感染']
-    dfo_ = dfo.set_index(['日期', '地区']).真实新增确诊.unstack()
-    dfo__ = dfo_.apply(lambda x: x.cumsum())
+
+    dfo_ = dfo.set_index(['日期', '地区']).真实新增确诊.unstack().sum(axis=1)
+    dfo_.columns = ['全国日增阳性']
+
+    dfo__ = dfo.set_index(['日期', '地区']).真实新增确诊.unstack().drop(columns='上海').loc['2022-04-20':,:]
+    temp = dfo__.sum()
+    dfo__ = dfo__.loc[:, temp[temp!=0].index]
+
     writer = pd.ExcelWriter("E:\\全国疫情.xlsx")
-    dfo_.to_excel(writer, sheet_name='每日新增')
-    dfo__.to_excel(writer, sheet_name='总计')
+    dfo_.to_excel(writer, sheet_name='全国日增')
+    dfo__.to_excel(writer, sheet_name='各省市日增')
     writer.save()
 
 def renew(source='WJW'):
@@ -419,7 +426,7 @@ def renew(source='WJW'):
 
 
 if __name__ == '__main__':
-    s = 'https://mp.weixin.qq.com/s/rufH4lvC5yO1835aNhs93A'
+    s = 'https://mp.weixin.qq.com/s/yXYX7NlcD0X7sgWZs5s28w'
     renew(source=s)
     get_gkline(source=s)
     get_ax(source=s)
