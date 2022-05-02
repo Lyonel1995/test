@@ -141,7 +141,7 @@ def txt_split_wx(x, location):
     x1 = x0_.split('本土无症状感染者情况')[0]
     x1 = x1.split('在风险人群筛查中发现新冠病毒核酸检测结果异常，即被隔离管控。经疾控中心复核结果为阳性。经市级专家会诊，综合流行病学史、临床症状、实验室检测和影像学检查结果等，诊断为确诊病例。')[0]
     x2 = x0_.split('本土无症状感染者情况')[1].split('境外输入病例情况')[0]
-    date = re.findall(f"(.*?)月(.*?)日", x0)[0]
+    date = re.findall(f"2022年(.*?)月(.*?)日", x0)[0]
     date = f"2022-{date[0]}-{date[1]}"
 
     def _cal(i):
@@ -236,7 +236,7 @@ def txt_split_wx_new(x):
     x0 = x.split('本土病例情况')[0].split('新增境外输入性新冠肺炎确诊病例')[0]
     x0_ = x.split('本土病例情况')[1]
     x1 = x0_.split('本土无症状感染者情况')[0]
-    date = re.findall(f"(.*?)月(.*?)日", x0)[0]
+    date = re.findall(f"2022年(.*?)月(.*?)日", x0)[0]
     date = f"2022-{date[0]}-{date[1]}"
 
     try:
@@ -262,7 +262,7 @@ def txt_split_gq(x, location):
     x0_ = x.split('本土病例情况')[1]
     x1 = x0_.split('本土无症状感染者情况')[0]
     x2 = x0_.split('本土无症状感染者情况')[1].split('境外输入病例情况')[0]
-    date = re.findall(f"(.*?)月(.*?)日", x0)[0]
+    date = re.findall(f"2022年(.*?)月(.*?)日", x0)[0]
     date = f"2022-{date[0]}-{date[1]}"
 
     if '在风险人群筛查中发现新冠病毒核酸检测结果异常，即被隔离管控。经疾控中心复核结果为阳性。经市级专家会诊，综合流行病学史、临床症状、实验室检测和影像学检查结果等，诊断为确诊病例。' in x1:
@@ -436,12 +436,12 @@ def renew(source='WJW'):
 
 
 if __name__ == '__main__':
-    s = 'https://mp.weixin.qq.com/s/CYOXGLyfb83mBhXfa-NCrA'
+    s = 'https://mp.weixin.qq.com/s/9JjgWRhVwTN9IY0DYS2ajQ'
     renew(source=s)
     get_gkline(source=s)
     get_ax(source=s)
     get_kwxz(source=s)
-    # get_china()
+    get_china()
 '''
 df = pd.read_excel("已导出.xlsx", index_col = 0)
 error_id = pd.read_csv("error.csv", index_col = 0)
