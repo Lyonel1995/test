@@ -10,9 +10,11 @@ import time
 import pandas as pd
 import re
 import requests
+from utils.config import CHROME_DRIVER
 
 def getDriver():
-    chrome_driver = r"C:\Users\liuyi\Anaconda3\Lib\site-packages\selenium\webdriver\chrome\chromedriver.exe"
+    # chrome_driver = r"C:\Users\liuyi\Anaconda3\Lib\site-packages\selenium\webdriver\chrome\chromedriver.exe"
+    chrome_driver = CHROME_DRIVER
     options = webdriver.ChromeOptions()
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option('useAutomationExtension', False)
@@ -116,5 +118,6 @@ def get_data(info_df, data_df):
             l.append(data)
     outdf = pd.concat(l, axis=1).T
     data_df = pd.concat([data_df, outdf])
+    data_df.to_excel("E:\\煤炭爬虫\\日数据.xlsx")
 # info_df = get_all_page(40)
 # info_df = pd.read_excel("E:\\煤炭爬虫\\info.xlsx", index_col=0)
