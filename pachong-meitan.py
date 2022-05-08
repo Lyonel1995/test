@@ -57,7 +57,14 @@ def get_data_from_wxpage(wx_url, date):
     df = df_raw[df_num]
     df.columns = df.iloc[7, :]
     df_ = df.set_index('电厂类型').loc[['全国统调电厂', '全国重点电厂', '南方八省电厂', '样本区域电厂'], '日耗']
-    df_ = df_.apply(lambda x: [float(i) for i in re.findall("(.*?)万吨", x)][0])
+    def _re(x):
+        _data = [float(i) for i in re.findall("(.*?)万吨", x)]
+        if len(_data)>0:
+            __data = _data
+        else:
+            __data = [float(i) for i in re.findall("(.*?)吨", x)]
+        return __data[0]
+    df_ = df_.apply(lambda x: _re(x))
     df_.name = date
     return df_
 
@@ -88,7 +95,7 @@ def get_all_page(pagenum):
     return df
 
 def get_data(info_df, data_df):
-    if data_df == None:
+    if isinstance(data_df,str):
         data_df = pd.DataFrame(columns=['全国统调电厂', '全国重点电厂', '南方八省电厂', '样本区域电厂'])
     l = []
     for i,x in info_df.iterrows():
@@ -121,3 +128,4 @@ def get_data(info_df, data_df):
     data_df.to_excel("E:\\煤炭爬虫\\日数据.xlsx")
 # info_df = get_all_page(40)
 # info_df = pd.read_excel("E:\\煤炭爬虫\\info.xlsx", index_col=0)
+# data_df = pd.read_excel("E:\\煤炭爬虫\\日数据.xlsx", index_col=0)
