@@ -86,6 +86,8 @@ def get_all_page(pagenum):
     return df
 
 def get_data(info_df, data_df):
+    if data_df == None:
+        data_df = pd.DataFrame(columns=['全国统调电厂', '全国重点电厂', '南方八省电厂', '样本区域电厂'])
     l = []
     for i,x in info_df.iterrows():
         if x.date in data_df.index:
