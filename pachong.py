@@ -436,12 +436,12 @@ def renew(source='WJW'):
 
 
 if __name__ == '__main__':
-    s = 'https://mp.weixin.qq.com/s/Sq1YN8oMu0RCSddtFnN3tg'
+    s = 'https://mp.weixin.qq.com/s/jlMoi0uCLQOGxNUH-TAZ0g'
     renew(source=s)
     get_gkline(source=s)
     get_ax(source=s)
     get_kwxz(source=s)
-    # get_china()
+    get_china()
 '''
 df = pd.read_excel("已导出.xlsx", index_col = 0)
 error_id = pd.read_csv("error.csv", index_col = 0)
