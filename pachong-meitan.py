@@ -64,7 +64,7 @@ def get_data_from_wxpage(wx_url, date):
         else:
             __data = [float(i) for i in re.findall("(.*?)吨", x)]
         return __data[0]
-    df_ = df_.apply(lambda x: _re(x))
+    df_ = df_.apply(lambda x: _re(x) if isinstance(x,str) else float('nan'))
     df_.name = date
     return df_
 
