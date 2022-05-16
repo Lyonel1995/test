@@ -436,7 +436,7 @@ def renew(source='WJW'):
 
 
 if __name__ == '__main__':
-    s = 'https://mp.weixin.qq.com/s/kl9WRMiTBTxcOltkWVgcqg'
+    s = 'https://mp.weixin.qq.com/s/5eHtCZBGZ5OuSHXlcUMafQ'
     renew(source=s)
     get_gkline(source=s)
     get_ax(source=s)
